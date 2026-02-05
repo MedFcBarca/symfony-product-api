@@ -1,174 +1,72 @@
-# Symfony Product API – Test Technique Backend
+Symfony Product API – Test Technique Backend
 
-## Contexte
+Projet Symfony permettant de gérer des produits et des catégories avec une relation ManyToMany.  
+Une API REST est exposée via API Platform, un back-office est disponible via EasyAdmin et un traitement asynchrone minimal est implémenté avec Symfony Messenger.
 
-Ce projet est un test technique Backend réalisé avec **Symfony**.  
-Il permet de gérer des **produits** et des **catégories**, avec la possibilité
-daffecter **une ou plusieurs catégories à un produit**
+### 1. Installation / lancement via Docker
 
-Le projet fournit :
-- une **API REST** (API Platform),
-- un **back-office d’administration** (EasyAdmin),
-- un **traitement asynchrone minimal** (Symfony Messenger),
-- une **infrastructure Docker** pour un lancement simple.
+À la racine du projet, lancer les conteneurs Docker :
 
----
-
-##  Stack technique
-
-- Symfony 6.4+
-- PHP 8.2
-- API Platform
-- Doctrine ORM
-- EasyAdmin 4
-- Symfony Messenger
-- MySQL
-- Docker & Docker Compose
-
----
-
-## Installation & Lancement
-
-### 1 Prérequis
-
-- Docker
-- Docker Compose
-
----
-
-### 2 Lancer le projet
-
-À la racine du projet :
-
-```bash
 docker compose up -d
 
-### 3 Accéder au container PHP
+Accéder au conteneur PHP :
+
 docker compose exec php bash
 
-### 4 Installer les dépendances 
+Installer les dépendances si nécessaire :
+
 composer install
 
-### 5 Base de données & migrations
+### 2. Commandes utiles
+
+Créer la base de données :
+
 php bin/console doctrine:database:create
-php bin/console make:migration
+
+Exécuter les migrations :
+
 php bin/console doctrine:migrations:migrate
 
- Accès à l’application
+Vider le cache :
 
-Application (Nginx) :
-👉 http://localhost:8080
+docker compose exec php bash
 
-Documentation API (Swagger / Hydra) :
-👉 http://localhost:8080/api
+php bin/console cache:clear
 
-Back-office EasyAdmin :
-👉 http://localhost:8080/admin
+### 3. Lancer le consumer Messenger 
 
-📦 Modèle de données
-Product
+Dans le cas d’un transport asynchrone, le consumer Messenger peut être lancé avec la commande suivante :
 
-id
+docker compose exec php bash
 
-designation (obligatoire)
+php bin/console messenger:consume sync -vv
 
-relation ManyToMany avec Category
+### 4. Comment tester rapidement l’API
 
-Category
+La documentation interactive de l’API (Swagger / API Platform) est accessible à l’adresse suivante :
 
-id
+http://localhost:8080/api
 
-designation (obligatoire)
+Exemples de requêtes curl.
 
-relation ManyToMany avec Product
+Créer une catégorie :
 
-Les migrations Doctrine sont incluses.
+curl -X POST http://localhost:8080/api/categories \
+-H "Content-Type: application/ld+json" \
+-d '{"designation":"Categorie A"}'
 
-🔌 API REST (API Platform)
-Endpoints principaux
-Produits
+Créer un produit :
 
-GET /api/products
+curl -X POST http://localhost:8080/api/products \
+-H "Content-Type: application/ld+json" \
+-d '{"designation":"Produit 1"}'
 
-GET /api/products/{id}
+Affecter une catégorie à un produit :
 
-POST /api/products
+curl -X PATCH http://localhost:8080/api/products/1 \
+-H "Content-Type: application/merge-patch+json" \
+-d '{"categories":["/api/categories/1"]}'
 
-PATCH /api/products/{id}
-
-Catégories
-
-GET /api/categories
-
-POST /api/categories
-
-Affectation catégories ↔ produit
-
-Exemple de requête :
-
-PATCH /api/products/1
-
-{
-  "categories": [
-    "/api/categories/1",
-    "/api/categories/2"
-  ]
-}
-
-🧑‍💼 Back-office (EasyAdmin)
-
-Le back-office permet :
-
-CRUD Product
-
-création / édition / suppression
-
-champ multi-sélection pour les catégories
-
-CRUD Category
-
-Accès :
+Le back-office EasyAdmin est accessible à l’adresse suivante :
 
 http://localhost:8080/admin
-
-Asynchrone – Messenger
-
-À chaque création ou mise à jour d’un produit :
-
-un message ProductUpdatedMessage(productId) est dispatché via Symfony Messenger
-
-un handler dédié traite ce message
-
-Objectif :
-
-démontrer que Messenger est correctement câblé
-
-message, handler et dispatch fonctionnels
-
-Le traitement asynchrone est volontairement minimal, conformément au sujet.
-
-
-
-
-🐳 Docker
-
-Le projet est entièrement dockerisé :
-
-fichier docker-compose.yml fourni
-
-🧪 Comment tester rapidement
-Créer une catégorie
-curl -X POST http://localhost:8080/api/categories \
-  -H "Content-Type: application/ld+json" \
-  -d '{"designation":"Catégorie A"}'
-
-Créer un produit
-curl -X POST http://localhost:8080/api/products \
-  -H "Content-Type: application/ld+json" \
-  -d '{"designation":"Produit 1"}'
-
-Affecter une catégorie à un produit
-curl -X PATCH http://localhost:8080/api/products/1 \
-  -H "Content-Type: application/merge-patch+json" \
-  -d '{"categories":["/api/categories/1"]}'
-
