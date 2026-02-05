@@ -1,0 +1,174 @@
+# Symfony Product API – Test Technique Backend
+
+## Contexte
+
+Ce projet est un test technique Backend réalisé avec **Symfony**.  
+Il permet de gérer des **produits** et des **catégories**, avec la possibilité
+daffecter **une ou plusieurs catégories à un produit**
+
+Le projet fournit :
+- une **API REST** (API Platform),
+- un **back-office d’administration** (EasyAdmin),
+- un **traitement asynchrone minimal** (Symfony Messenger),
+- une **infrastructure Docker** pour un lancement simple.
+
+---
+
+##  Stack technique
+
+- Symfony 6.4+
+- PHP 8.2
+- API Platform
+- Doctrine ORM
+- EasyAdmin 4
+- Symfony Messenger
+- MySQL
+- Docker & Docker Compose
+
+---
+
+## Installation & Lancement
+
+### 1 Prérequis
+
+- Docker
+- Docker Compose
+
+---
+
+### 2 Lancer le projet
+
+À la racine du projet :
+
+```bash
+docker compose up -d
+
+### 3 Accéder au container PHP
+docker compose exec php bash
+
+### 4 Installer les dépendances 
+composer install
+
+### 5 Base de données & migrations
+php bin/console doctrine:database:create
+php bin/console make:migration
+php bin/console doctrine:migrations:migrate
+
+ Accès à l’application
+
+Application (Nginx) :
+👉 http://localhost:8080
+
+Documentation API (Swagger / Hydra) :
+👉 http://localhost:8080/api
+
+Back-office EasyAdmin :
+👉 http://localhost:8080/admin
+
+📦 Modèle de données
+Product
+
+id
+
+designation (obligatoire)
+
+relation ManyToMany avec Category
+
+Category
+
+id
+
+designation (obligatoire)
+
+relation ManyToMany avec Product
+
+Les migrations Doctrine sont incluses.
+
+🔌 API REST (API Platform)
+Endpoints principaux
+Produits
+
+GET /api/products
+
+GET /api/products/{id}
+
+POST /api/products
+
+PATCH /api/products/{id}
+
+Catégories
+
+GET /api/categories
+
+POST /api/categories
+
+Affectation catégories ↔ produit
+
+Exemple de requête :
+
+PATCH /api/products/1
+
+{
+  "categories": [
+    "/api/categories/1",
+    "/api/categories/2"
+  ]
+}
+
+🧑‍💼 Back-office (EasyAdmin)
+
+Le back-office permet :
+
+CRUD Product
+
+création / édition / suppression
+
+champ multi-sélection pour les catégories
+
+CRUD Category
+
+Accès :
+
+http://localhost:8080/admin
+
+Asynchrone – Messenger
+
+À chaque création ou mise à jour d’un produit :
+
+un message ProductUpdatedMessage(productId) est dispatché via Symfony Messenger
+
+un handler dédié traite ce message
+
+Objectif :
+
+démontrer que Messenger est correctement câblé
+
+message, handler et dispatch fonctionnels
+
+Le traitement asynchrone est volontairement minimal, conformément au sujet.
+
+
+
+
+🐳 Docker
+
+Le projet est entièrement dockerisé :
+
+fichier docker-compose.yml fourni
+
+🧪 Comment tester rapidement
+Créer une catégorie
+curl -X POST http://localhost:8080/api/categories \
+  -H "Content-Type: application/ld+json" \
+  -d '{"designation":"Catégorie A"}'
+
+Créer un produit
+curl -X POST http://localhost:8080/api/products \
+  -H "Content-Type: application/ld+json" \
+  -d '{"designation":"Produit 1"}'
+
+Affecter une catégorie à un produit
+curl -X PATCH http://localhost:8080/api/products/1 \
+  -H "Content-Type: application/merge-patch+json" \
+  -d '{"categories":["/api/categories/1"]}'
+
